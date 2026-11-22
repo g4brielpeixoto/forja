@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forja</title>
+<meta name="theme-color" content="#14213D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Forja">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: coluna única para celular. Seis blocos da ficha em grade 2x3, um bloco aberto por vez,
+   cada exercício em cartão com séries tocáveis, boneco animado e carga. Cronômetro de descanso fixo no rodapé.
+   Identidade Forja: azul-noite, laranja brasa, verde menta, gelo. */
+:root{
+  --bg:#F3F5F8; --surface:#ffffff; --ink:#14213D; --muted:#5A6580; --line:#DCE1EA;
+  --brasa:#FF7A1A; --brasa-ink:#A84600; --brasa-soft:#FFEBDC; --on-brasa:#14213D;
+  --menta:#2BB28A; --menta-ink:#12745A; --menta-soft:#DDF4EC;
+  --limb-far:#A7B0C2;
+  --display:"Outfit","Trebuchet MS",Arial,sans-serif;
+  --body:"Figtree","Segoe UI",Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0B1322; --surface:#14213D; --ink:#EEF2F8; --muted:#9BA8C2; --line:#263759;
+    --brasa:#FF8A33; --brasa-ink:#FFA35C; --brasa-soft:#3A2412; --on-brasa:#14213D;
+    --menta:#3CCB9F; --menta-ink:#5FDDB5; --menta-soft:#123A30;
+    --limb-far:#55648A;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0B1322; --surface:#14213D; --ink:#EEF2F8; --muted:#9BA8C2; --line:#263759;
+  --brasa:#FF8A33; --brasa-ink:#FFA35C; --brasa-soft:#3A2412; --on-brasa:#14213D;
+  --menta:#3CCB9F; --menta-ink:#5FDDB5; --menta-soft:#123A30;
+  --limb-far:#55648A;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5}
+.wrap{max-width:680px;margin:0 auto;padding:18px 16px 120px;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);font-weight:700;line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:30px;letter-spacing:.01em}
+h2{font-size:24px}
+h3{font-size:18px;font-weight:600}
+p{margin:0}
+.muted{color:var(--muted)} .small{font-size:14px} .num{font-variant-numeric:tabular-nums}
+button{font-family:var(--body)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--brasa);outline-offset:2px}
+
+.brand{display:flex;align-items:center;gap:12px}
+.brand svg{flex:none;border-radius:14px}
+.brand p{font-size:14px;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.stack{display:flex;flex-direction:column;gap:12px}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--line);border-radius:12px;padding:4px}
+.seg button{appearance:none;border:0;border-radius:9px;background:transparent;color:var(--ink);padding:8px 6px;font-size:14px;font-weight:500;cursor:pointer;line-height:1.25}
+.seg button b{display:block;font-family:var(--display);font-size:16px;font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--surface);box-shadow:0 0 0 1px var(--ink) inset}
+
+.blocks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.blk{appearance:none;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0}
+.blk .n{font-family:var(--display);font-weight:600;font-size:17px;line-height:1.15}
+.blk .k{font-size:12.5px;color:var(--muted)}
+.blk .st{font-size:12.5px;font-weight:600;color:var(--menta-ink)}
+.blk[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset}
+.blk .pb{height:4px;border-radius:99px;background:var(--line);margin-top:4px;overflow:hidden}
+.blk .pb i{display:block;height:100%;background:var(--menta);width:0}
+
+.head{display:flex;flex-direction:column;gap:6px}
+.eyebrow{font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--brasa-ink)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:14px;color:var(--muted)}
+.meta b{color:var(--ink);font-weight:600}
+.note{border-left:4px solid var(--brasa);background:var(--bg);padding:8px 12px;font-size:15px;border-radius:0 8px 8px 0}
+
+.exlist{display:flex;flex-direction:column;gap:12px}
+.ex{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.ex.done{border-color:var(--menta)}
+.extop{display:flex;flex-direction:column;gap:5px}
+.exnum{font-family:var(--display);font-weight:600;font-size:13px;color:var(--muted);letter-spacing:.06em}
+.exname{font-family:var(--display);font-weight:600;font-size:19px;line-height:1.2}
+.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.tag.i{background:var(--menta-soft);color:var(--menta-ink)}
+.tag.a{background:var(--brasa-soft);color:var(--brasa-ink)}
+.tag.s{background:var(--ink);color:var(--surface)}
+.orig{font-size:13px;color:var(--muted)}
+.sets{display:flex;flex-wrap:wrap;gap:8px}
+.set{appearance:none;min-width:58px;height:48px;padding:0 10px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);color:var(--ink);font-family:var(--display);font-weight:600;font-size:17px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
+.set small{font-family:var(--body);font-weight:500;font-size:10.5px;color:var(--muted)}
+.set[aria-pressed="true"]{background:var(--menta);border-color:var(--menta);color:#0b2b22}
+.set[aria-pressed="true"] small{color:#0b2b22}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:13px;font-weight:500;padding:2px 9px;border-radius:6px;background:var(--bg);border:1px solid var(--line)}
+.chip.tec{border-color:var(--brasa);color:var(--brasa-ink);background:var(--brasa-soft)}
+.demo{display:grid;grid-template-columns:112px 1fr;gap:12px;align-items:start}
+.demo.nofig{grid-template-columns:1fr}
+.figbtn{appearance:none;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:0;cursor:pointer;display:block;width:112px;line-height:0}
+.fig{width:100%;height:auto;display:block}
+.fig .gr{stroke:var(--line);stroke-width:2;stroke-linecap:round}
+.fig .bench{fill:var(--line)}
+.fig .pole{stroke:var(--line);stroke-width:5;stroke-linecap:round}
+.fig .near{stroke:var(--ink);stroke-width:6.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.fig .far{stroke:var(--limb-far);stroke-width:6.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.fig .hd{fill:var(--ink)}
+.fig .prop{fill:var(--brasa)}
+.cue{font-size:14.5px;color:var(--muted)}
+.load{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+.load input{font:500 15px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;width:100%;min-width:0}
+.effort{display:flex;align-items:flex-end;gap:2px;height:64px;border-bottom:2px solid var(--line)}
+.effort i{display:block;flex:1;border-radius:3px 3px 0 0;background:var(--brasa)}
+.effort i.easy{background:var(--limb-far);height:35%}
+.effort i.hard{height:90%}
+.finish{border:1px solid var(--menta);background:var(--menta-soft);color:var(--menta-ink);border-radius:12px;padding:12px 14px;font-weight:600}
+
+.timer{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--ink);color:var(--surface);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));display:none}
+.timer.on{display:block}
+.timer .in{max-width:680px;margin:0 auto;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center}
+.timer .t{font-family:var(--display);font-weight:700;font-size:34px;line-height:1;min-width:86px}
+.timer .l{font-size:14px;line-height:1.3}
+.timer .l b{display:block;font-weight:600;font-size:15px}
+.timer button{appearance:none;border:0;border-radius:10px;background:var(--brasa);color:var(--on-brasa);font-weight:600;font-size:15px;padding:10px 14px;cursor:pointer}
+.timer .tb{grid-column:1/-1;height:5px;border-radius:99px;background:rgba(127,140,170,.35);overflow:hidden}
+.timer .tb i{display:block;height:100%;background:var(--brasa);width:100%}
+.timer.end{background:var(--menta);color:#0b2b22}
+.timer.end button{background:#0b2b22;color:#fff}
+
+.legend{display:flex;flex-direction:column;gap:8px}
+.legend div{display:grid;grid-template-columns:132px 1fr;gap:10px;align-items:start;font-size:14.5px}
+.legend .tag{justify-self:start}
+.rules{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.rules b{font-weight:600}
+.hist{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mini{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.mini .big{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.1}
+.mini .lab{font-size:13px;color:var(--muted)}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 14px;font-weight:500;font-size:14px;cursor:pointer;align-self:flex-start}
+body.locked .wrap > section:not(#auth), body.locked .timer{display:none}
+#auth[hidden], #newpass[hidden], #logout[hidden]{display:none}
+.aform{display:flex;flex-direction:column;gap:10px}
+.aform label{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--muted)}
+.aform input{font:500 16px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+.arow{display:flex;flex-wrap:wrap;gap:8px}
+.btn.primary{background:var(--brasa);border-color:var(--brasa);color:var(--on-brasa);font-weight:600;font-size:15px;padding:10px 18px}
+.amsg{font-size:14px;min-height:1.2em;color:var(--brasa-ink)}
+@media (max-width:360px){.demo{grid-template-columns:1fr}.legend div{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="brand">
+  <svg width="56" height="56" viewBox="0 0 84 84" role="img" aria-label="Logo do Forja">
+    <rect width="84" height="84" rx="20" fill="#14213D"/>
+    <path d="M18 40 L42 19 L66 40" fill="none" stroke="#FF7A1A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="27" y="52" width="30" height="6" rx="3" fill="#F3F5F8"/>
+    <rect x="20" y="43" width="8" height="24" rx="3" fill="#F3F5F8"/>
+    <rect x="56" y="43" width="8" height="24" rx="3" fill="#F3F5F8"/>
+  </svg>
+  <div><h1>Forja</h1><p>Ficha de academia, feita em casa</p></div>
+</header>
+
+<section class="card stack" id="auth" hidden>
+  <h2 id="auth-title">Entrar</h2>
+  <p class="muted small">Seus treinos ficam guardados na sua conta e aparecem em qualquer aparelho.</p>
+  <form class="aform" id="login" novalidate>
+    <label for="a-email">E-mail<input id="a-email" type="email" autocomplete="username" inputmode="email"></label>
+    <label for="a-pass">Senha<input id="a-pass" type="password" autocomplete="current-password"></label>
+    <div class="arow">
+      <button class="btn primary" type="submit">Entrar</button>
+      <button class="btn" type="button" id="a-signup">Criar conta</button>
+      <button class="btn" type="button" id="a-forgot">Esqueci a senha</button>
+    </div>
+  </form>
+  <form class="aform" id="newpass" hidden novalidate>
+    <label for="a-new">Nova senha<input id="a-new" type="password" autocomplete="new-password"></label>
+    <div class="arow"><button class="btn primary" type="submit">Salvar nova senha</button></div>
+  </form>
+  <p class="amsg" id="a-msg" role="status"></p>
+</section>
+
+<section class="stack" aria-label="Fase do treino">
+  <div class="seg" id="fase">
+    <button type="button" data-f="1"><b>Fase 1</b>3 séries, para começar</button>
+    <button type="button" data-f="2"><b>Fase 2</b>volume completo da ficha</button>
+  </div>
+</section>
+
+<section class="blocks" id="blocks" aria-label="Blocos da ficha"></section>
+
+<section class="stack" id="detail"></section>
+
+<section class="card stack">
+  <h2>Como ler as etiquetas</h2>
+  <div class="legend">
+    <div><span class="tag i">Igual à ficha</span><span>Mesmo exercício da academia, sem perda.</span></div>
+    <div><span class="tag a">Adaptado</span><span>Mesmo músculo e mesma função, trocando a máquina pelo kit, pelo sofá ou pelo chão.</span></div>
+    <div><span class="tag s">Substituto próximo</span><span>Não existe equivalente real em casa. É o melhor possível até você ter um elástico.</span></div>
+  </div>
+</section>
+
+<section class="card stack">
+  <h2>Regras da adaptação</h2>
+  <ul class="rules">
+    <li><b>Um kit por dia.</b> Blocos de inferior usam só o kettlebell (até 14 kg). Blocos de superior usam só os halteres (7 kg cada). Você monta uma vez por treino.</li>
+    <li><b>Carga fixa pede técnica.</b> A ficha sobe o peso a cada série. Em casa o peso não sobe, então a dificuldade vem da descida lenta, da pausa e das versões em uma perna. A etiqueta laranja de cada exercício diz qual usar.</li>
+    <li><b>Última série perto do limite.</b> Termine com 1 ou 2 repetições de sobra, sem perder a forma.</li>
+    <li><b>Ordem dos blocos.</b> Inferior 1, Superior 1, Inferior 2, Superior 2, Inferior 3, um por dia de treino. Começando, 3 a 4 blocos por semana bastam. Alongamentos todos os dias.</li>
+    <li><b>Quando passar para a Fase 2.</b> Depois de 3 a 4 semanas fechando todas as séries da Fase 1 com boa forma.</li>
+    <li><b>Dor aguda em articulação, tontura ou dor no peito:</b> pare na hora.</li>
+  </ul>
+</section>
+
+<section class="card stack">
+  <h2>O que um elástico resolveria</h2>
+  <p class="muted">Puxada alta e barra fixa não têm equivalente com halteres. Um elástico de resistência preso no alto da porta devolve esses dois movimentos, e uma mini band deixa abdução e elevação de quadril como na ficha. Até lá, os exercícios marcados como substituto próximo cobrem o músculo com menos carga.</p>
+</section>
+
+<section class="card stack">
+  <h2>Histórico</h2>
+  <div class="hist">
+    <div class="mini"><div class="lab">Treinos concluídos</div><div class="big num" id="h-total">0</div></div>
+    <div class="mini"><div class="lab">Nesta semana</div><div class="big num" id="h-week">0</div></div>
+  </div>
+  <p class="small muted" id="h-last">Nenhum treino concluído ainda. Um bloco entra no histórico quando todas as séries dele são marcadas.</p>
+  <button class="btn" id="reset" type="button">Zerar as marcações de hoje</button>
+  <p class="small muted" id="acct"></p>
+  <button class="btn" id="logout" type="button" hidden>Sair da conta</button>
+</section>
+
+</div>
+
+<div class="timer" id="timer" role="status" aria-live="off">
+  <div class="in">
+    <span class="t num" id="t-time">0:45</span>
+    <span class="l"><b id="t-title">Descanso</b><span id="t-sub"></span></span>
+    <button type="button" id="t-skip">Pular</button>
+    <div class="tb"><i id="t-bar"></i></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* ---------- Bonecos animados ---------- */
+var FEET = [[94,150],[106,150]];
+var LYING = {H:[112,142],S:[70,142]};
+var ANIM = {
+  agach:    {a:{H:[100,84],S:[100,42],h:[108,44],f:FEET}, b:{H:[82,116],S:[98,80],h:[106,82]}, prop:"db"},
+  goblet:   {a:{H:[100,84],S:[100,42],h:[108,56],f:FEET}, b:{H:[82,116],S:[98,80],h:[106,94]}, prop:"kb"},
+  cadeira:  {a:{H:[100,84],S:[100,42],h:[124,60],f:FEET}, b:{H:[82,113],S:[96,76],h:[128,84]}, bench:[40,46]},
+  sumo:     {a:{H:[100,84],S:[100,42],h:[102,86],f:[[92,150],[108,150]]}, b:{H:[84,108],S:[106,72],h:[104,114]}, prop:"kb"},
+  bomdia:   {a:{H:[100,84],S:[100,42],h:[108,56],f:FEET}, b:{H:[84,90],S:[121,68],h:[124,84]}, prop:"kb"},
+  afundo:   {a:{H:[100,84],S:[100,42],h:[108,56],f:[[108,150],[98,150]]}, b:{H:[92,112],S:[94,70],h:[102,84],f:[[108,150],[60,150]]}, prop:"kb"},
+  bulgaro:  {a:{H:[96,88],S:[102,46],h:[110,60],f:[[112,150],[60,120]]}, b:{H:[90,112],S:[104,72],h:[112,86]}, prop:"kb", bench:[26,46]},
+  sissy:    {a:{H:[100,84],S:[100,42],h:[128,58],f:[100,150]}, b:{H:[96,106],S:[78,68],h:[120,60]}, pole:1},
+  thrust:   {a:{H:[104,140],S:[74,117],h:[100,130],f:[140,150]}, b:{H:[110,114],S:[74,116],h:[106,104]}, prop:"kb", bench:[26,46], es:-1},
+  slide:    {a:{H:[100,132],S:[60,143],h:[100,147],f:[164,150]}, b:{H:[100,120],f:[130,150]}, es:-1},
+  pontesofa:{a:{H:[92,141],S:[50,143],h:[92,147],f:[132,119]}, b:{H:[94,118]}, bench:[128,46], es:-1},
+  bracing:  {a:{H:[104,143],S:[62,143],h:[104,147],f:[168,146]}, b:{S:[62,141]}, es:-1, per:3600, hold:1},
+  pernas:   {a:{H:[104,143],S:[62,143],h:[104,147],f:[168,138]}, b:{f:[106,78]}, polf:1, es:-1},
+  abduc:    {a:{H:[104,140],S:[60,140],h:[86,147],f:[[168,140],[168,148]]}, b:{f:[[158,98],[168,148]]}, polf:1, es:-1},
+  perdig:   {a:{H:[120,110],S:[78,108],h:[[78,150],[78,150]],f:[[152,148],[152,148]]}, b:{h:[[78,150],[36,102]],f:[[186,108],[152,148]]}, ks:1, per:3200},
+  coice:    {a:{H:[120,110],S:[78,108],h:[78,150],f:[[152,148],[152,148]]}, b:{f:[[178,92],[152,148]]}, ks:1},
+  prancha:  {a:{H:[112,128],S:[72,124],h:[50,147],f:[174,148]}, b:{H:[112,125]}, es:-1, per:3200, hold:1},
+  abd:      {a:{H:[112,142],S:[70,142],h:[60,134],f:[138,150]}, b:{S:[76,127],h:[70,116]}},
+  supino:   {a:{H:[112,142],S:[70,142],h:[72,122],f:[138,150]}, b:{h:[72,99]}, prop:"db"},
+  supinc:   {a:{H:[108,142],S:[74,113],h:[86,96],f:[140,150]}, b:{h:[96,72]}, prop:"db", bench:[26,46]},
+  pullover: {a:{H:[112,142],S:[70,142],h:[70,99],f:[138,150]}, b:{h:[30,134]}, polh:1, prop:"db1"},
+  testa:    {a:{H:[112,142],S:[70,142],h:[68,99],f:[138,150]}, b:{h:[54,122]}, prop:"db"},
+  slidepull:{a:{H:[130,144],S:[88,142],h:[44,147],f:[190,148]}, b:{H:[108,144],S:[66,142],f:[168,148]}, es:-1},
+  remada:   {a:{H:[90,90],S:[126,68],h:[127,110],f:[[88,150],[100,150]]}, b:{h:[110,90]}, prop:"db"},
+  remuni:   {a:{H:[84,90],S:[122,80],h:[[116,122],[134,119]],f:[[78,150],[92,150]]}, b:{h:[[104,94],[134,119]]}, prop:"db1", bench:[128,46]},
+  desenv:   {a:{H:[100,84],S:[100,42],h:[108,44],f:FEET}, b:{h:[102,0]}, prop:"db"},
+  triceps:  {a:{H:[100,84],S:[100,42],h:[88,32],f:FEET}, b:{h:[101,-1]}, prop:"db1"},
+  rosca:    {a:{H:[100,84],S:[100,42],h:[103,86],f:FEET}, b:{h:[112,48]}, polh:1, prop:"db"},
+  elevlat:  {a:{H:[100,84],S:[100,42],h:[[110,85],[90,85]],f:[[108,150],[92,150]]}, b:{h:[[143,44],[57,44]]}, polh:1, prop:"db"},
+  dip:      {a:{H:[118,116],S:[128,78],h:[132,120],f:[70,150]}, b:{H:[114,138],S:[124,100]}, bench:[128,46], es:-1, ks:1}
+};
+var LEN = {th:33, sh:33, ua:22, fa:22};
+function ik(a,b,l1,l2,s){
+  var dx=b[0]-a[0], dy=b[1]-a[1], d=Math.sqrt(dx*dx+dy*dy)||0.001, m=l1+l2-0.5;
+  if(d>m){ dx*=m/d; dy*=m/d; d=m; }
+  var d1=(l1*l1-l2*l2+d*d)/(2*d), h=Math.sqrt(Math.max(0,l1*l1-d1*d1)), ux=dx/d, uy=dy/d;
+  return [[a[0]+ux*d1-uy*h*s, a[1]+uy*d1+ux*h*s],[a[0]+dx,a[1]+dy]];
+}
+function pick(v,i){ return Array.isArray(v[0]) ? v[i] : v; }
+function lerp(a,b,p){ return [a[0]+(b[0]-a[0])*p, a[1]+(b[1]-a[1])*p]; }
+function polar(ra,a,rb,b,r,p){
+  var ax=a[0]-ra[0], ay=a[1]-ra[1], bx=b[0]-rb[0], by=b[1]-rb[1];
+  var d1=Math.sqrt(ax*ax+ay*ay), d2=Math.sqrt(bx*bx+by*by), t1=Math.atan2(ay,ax), dt=Math.atan2(by,bx)-t1;
+  while(dt>Math.PI) dt-=2*Math.PI; while(dt<-Math.PI) dt+=2*Math.PI;
+  var d=d1+(d2-d1)*p, t=t1+dt*p; return [r[0]+Math.cos(t)*d, r[1]+Math.sin(t)*d];
+}
+function figSVG(key){
+  var ex = ANIM[key];
+  return '<svg viewBox="0 -12 200 170" class="fig" data-anim="'+key+'" aria-hidden="true">'
+   + '<line class="gr" x1="6" y1="152" x2="194" y2="152"/>'
+   + (ex.bench?'<rect class="bench" x="'+ex.bench[0]+'" y="121" width="'+ex.bench[1]+'" height="31" rx="4"/>':'')
+   + (ex.pole?'<line class="pole" x1="132" y1="30" x2="132" y2="150"/>':'')
+   + '<polyline class="far" data-p="l2"/><polyline class="far" data-p="a2"/>'
+   + '<line class="near" data-p="t"/><circle class="hd" data-p="hd" r="8.5"/>'
+   + '<polyline class="near" data-p="l1"/><polyline class="near" data-p="a1"/>'
+   + '<circle class="prop" data-p="p2" r="0"/><circle class="prop" data-p="p1" r="0"/></svg>';
+}
+function pts(a){ return a.map(function(p){ return p[0].toFixed(1)+","+p[1].toFixed(1); }).join(" "); }
+function drawFig(svg,p){
+  var ex = ANIM[svg.getAttribute("data-anim")], A = ex.a, B = ex.b;
+  var q = function(n){ return svg.querySelector('[data-p="'+n+'"]'); };
+  var Ha=A.H, Hb=B.H||A.H, Sa=A.S, Sb=B.S||A.S, H=lerp(Ha,Hb,p), S=lerp(Sa,Sb,p);
+  var es = ex.es||1, ks = ex.ks||-1, hands=[], i;
+  for(i=0;i<2;i++){
+    var ha=pick(A.h,i), hb=pick(B.h||A.h,i), fa=pick(A.f,i), fb=pick(B.f||A.f,i);
+    var hand = ex.polh ? polar(Sa,ha,Sb,hb,S,p) : lerp(ha,hb,p);
+    var foot = ex.polf ? polar(Ha,fa,Hb,fb,H,p) : lerp(fa,fb,p);
+    var arm = ik(S,hand,LEN.ua,LEN.fa,es), leg = ik(H,foot,LEN.th,LEN.sh,ks);
+    q("a"+(i+1)).setAttribute("points", pts([S,arm[0],arm[1]]));
+    q("l"+(i+1)).setAttribute("points", pts([H,leg[0],leg[1]]));
+    hands.push(arm);
+  }
+  var t=q("t"); t.setAttribute("x1",H[0]); t.setAttribute("y1",H[1]); t.setAttribute("x2",S[0]); t.setAttribute("y2",S[1]);
+  var tx=S[0]-H[0], ty=S[1]-H[1], tl=Math.sqrt(tx*tx+ty*ty)||1, hd=q("hd");
+  hd.setAttribute("cx",S[0]+tx/tl*15); hd.setAttribute("cy",S[1]+ty/tl*15);
+  var p1=q("p1"), p2=q("p2"), h1=hands[0][1], h2=hands[1][1];
+  if(ex.prop==="db"||ex.prop==="db1"){
+    p1.setAttribute("r",6.5); p1.setAttribute("cx",h1[0]); p1.setAttribute("cy",h1[1]);
+    if(ex.prop==="db"){ p2.setAttribute("r",6.5); p2.setAttribute("cx",h2[0]); p2.setAttribute("cy",h2[1]); }
+  } else if(ex.prop==="kb"){
+    p1.setAttribute("r",9.5); p1.setAttribute("cx",h1[0]); p1.setAttribute("cy",h1[1]);
+  }
+}
+var playing = !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches), figs = [];
+function frame(now){
+  if(playing){
+    for(var i=0;i<figs.length;i++){
+      var ex = ANIM[figs[i].getAttribute("data-anim")], per = ex.per||2600;
+      drawFig(figs[i], (1-Math.cos(2*Math.PI*((now%per)/per)))/2);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- Ficha adaptada ----------
+   t: i = igual à ficha, a = adaptado, s = substituto próximo
+   s1 = séries da Fase 1, s2 = séries da ficha, r = descanso (s), c = técnica, w = carga, lado = por lado/perna */
+function rep(n,v){ var a=[]; for(var i=0;i<n;i++) a.push(v); return a; }
+var BRACING = function(s2){ return {n:"Manobra de bracing", t:"i", s1:rep(3,"30 s"), s2:s2, r:45, w:"Peso do corpo", an:"bracing",
+  d:"Deitado de costas, pernas estendidas na largura do quadril, pés apontando para cima, palmas para cima. Ombros no chão e queixo para dentro. Solte todo o ar fechando as costelas e contraia o abdômen, sem achatar a lombar no chão. Respire só com a parte alta do peito."}; };
+var PERDIG = {n:"Perdigueiro alternado", t:"i", s1:rep(3,"15"), s2:rep(3,"15"), r:45, c:"Segure de 2 a 5 s estendido", w:"Peso do corpo", an:"perdig",
+  d:"Em quatro apoios, mãos sob os ombros e joelhos sob o quadril. Estenda o braço direito à frente e a perna esquerda para trás, alinhados ao tronco. Volte devagar e troque o lado. Solte o ar ao estender."};
+var PRANCHA = {n:"Prancha isométrica", t:"i", s1:rep(3,"30 s"), s2:rep(4,"60 s"), r:45, w:"Peso do corpo", an:"prancha",
+  d:"Cotovelos sob os ombros, corpo em linha reta. Inspire pelo nariz e, ao soltar o ar, puxe o umbigo para dentro e mantenha. Respire curto, sem prender o ar. A qualidade da contração vale mais que o tempo."};
+var OBLIQUO = {n:"Abdominal oblíquo unilateral", t:"i", s1:rep(3,"15"), s2:rep(3,"15"), r:45, lado:"por lado", w:"Peso do corpo", an:"abd",
+  d:"Deitado, joelhos dobrados, uma mão atrás da cabeça. Leve o ombro em direção ao joelho oposto, tirando a escápula do chão. Faça todas de um lado antes de trocar."};
+var HIIT = {n:"HIIT na bike", o:"Esteira sprint", t:"a", s1:["15 min"], s2:["15 min"], r:0, bike:1,
+  d:"1 minuto forte, com carga alta e só palavras soltas saindo, e 1 minuto leve de giro solto. Repita até fechar 15 minutos. Na ficha era correr 1 minuto e andar 1 minuto na esteira."};
+var ESCAPULA = " Ombros para trás e para baixo antes de puxar; na volta, os braços estendem primeiro e as escápulas soltam por último.";
+
+var BLOCKS = [
+ {id:"al", n:"Alongamentos", k:"Todos os dias", kit:"Nenhum. Uma cadeira, a parede e o batente da porta.", time:"12 a 15 min",
+  note:"A ficha pede estes alongamentos todos os dias. Dois deles estavam marcados para um lado só, um ajuste pessoal de quem recebeu a ficha. Aqui você faz os dois lados.",
+  ex:[
+   {n:"Flexor do quadril ajoelhado", o:"Alongamento 2", t:"i", s1:rep(2,"40 s"), s2:rep(3,"40 s"), r:15, lado:"por lado",
+    d:"Ajoelhado sobre um tapete, uma perna à frente com o joelho a 90°, mãos apoiadas numa cadeira. Tronco ereto, abdômen contraído. Empurre o quadril para baixo e para a frente até sentir a virilha da perna de trás. Quadril alinhado, sem inclinar para o lado."},
+   {n:"Sentado com as pernas afastadas", o:"Alongamento 4", t:"i", s1:rep(2,"40 s"), s2:rep(3,"40 s"), r:15,
+    d:"Sentado, pernas o mais afastadas possível, pés e joelhos apontando para cima. Incline o tronco à frente sem curvar a lombar, com o abdômen contraído."},
+   {n:"Borboleta com flexão do tronco", o:"Alongamento 5", t:"i", s1:rep(2,"40 s"), s2:rep(2,"40 s"), r:15,
+    d:"Sentado, calcanhares apoiados um no outro e joelhos soltos para os lados. Dobre primeiro no quadril e depois arredonde a coluna por igual."},
+   {n:"Torção de coluna deitado", o:"Alongamento de coluna I", t:"a", s1:rep(2,"40 s"), s2:rep(3,"40 s"), r:15, lado:"por lado",
+    d:"Deitado de costas, leve um joelho dobrado para o lado oposto do corpo e mantenha os dois ombros no chão. A ficha traz só uma foto, sem descrição, então esta é a leitura mais provável do exercício."},
+   {n:"Dorsal segurando no batente da porta", o:"Alongamento dorsal no espaldar II", t:"a", s1:rep(2,"20 s"), s2:rep(3,"20 s"), r:15, lado:"por lado",
+    d:"Segure o batente da porta com uma mão na altura do peito. Jogue o quadril para trás e para o lado oposto até sentir a lateral das costas alongar. O batente faz o papel do espaldar."},
+   {n:"Sentado no ar na parede, com expiração forçada", o:"Alongamento 9 (no espaldar)", t:"a", s1:rep(2,"30 s"), s2:rep(2,"40 s"), r:30,
+    d:"Costas na parede, desça até as coxas ficarem a 90°, braços estendidos acima da cabeça encostados na parede. Queixo para dentro. Solte todo o ar fechando as costelas e segure essa contração, respirando curto pela parte alta do peito."}
+  ]},
+ {id:"i1", n:"Inferior 1", k:"Kettlebell", kit:"Kettlebell cheio, 14 kg. Se a forma falhar, tire duas anilhas.", time:"50 a 60 min",
+  note:"O bloco mais dependente de máquina da ficha: leg press, hack, extensora e flexora. Em casa, quem faz o trabalho pesado é a descida lenta.",
+  ex:[
+   BRACING(rep(5,"40 s")), PERDIG,
+   {n:"Elevação de quadril com as costas no sofá", o:"Elevação de quadril com barra (landmine)", t:"a", s1:["15","12","12"], s2:["15","12","12"], r:45, w:"Kettlebell sobre o quadril, com uma toalha dobrada", an:"thrust",
+    d:"Parte alta das costas no assento do sofá, pés na largura do quadril. Empurre os calcanhares até o quadril estender, aperte o glúteo e desça controlando. Costelas para baixo, sem arquear a lombar. Solte o ar lá em cima."},
+   {n:"Agachamento goblet com pausa", o:"Leg press 45", t:"a", s1:["12","12","10"], s2:["12","12","10","8"], r:60, c:"Desce em 3 s, pausa de 2 s embaixo", an:"goblet",
+    d:"Kettlebell junto ao peito, pés na largura dos ombros. Busque a maior amplitude que não cause dor. A ficha sobe a carga a cada série; aqui, a pausa embaixo faz esse papel."},
+   {n:"Agachamento goblet com calcanhares elevados", o:"Agachamento hack", t:"a", s1:["12","10","10"], s2:["12","10","10","8"], r:60, c:"Desce em 3 s. Última série até quase o limite", an:"goblet",
+    d:"Calcanhares sobre um livro grosso ou uma tábua, pés próximos, tronco ereto. Os joelhos avançam à frente e a coxa trabalha mais, como no hack. A ficha usava de 20 a 40 kg por lado."},
+   {n:"Agachamento sissy apoiado", o:"Cadeira extensora unilateral", t:"a", s1:["12","10","8"], s2:["15","12","10","8"], r:60, c:"Desce em 3 s, sobe em 2 s", w:"Peso do corpo", an:"sissy",
+    d:"Segure no batente da porta. Suba nos dedos dos pés, leve os joelhos à frente e incline o corpo para trás em linha reta, do joelho ao ombro. Desça só até onde o joelho aceitar sem dor."},
+   {n:"Flexão de joelhos deslizando", o:"Flexora unilateral", t:"a", s1:["12","10","10"], s2:["12","12","10","10"], r:60, c:"Pico de 2 s com os pés perto do glúteo, volta em 3 s", w:"Peso do corpo, toalha sob os calcanhares", an:"slide",
+    d:"Deitado de costas, calcanhares sobre uma toalha no piso liso. Eleve o quadril e puxe os calcanhares até perto do glúteo, sem deixar o quadril cair. Quando ficar fácil, faça uma perna por vez, como na ficha."},
+   {n:"Panturrilha sentado com kettlebell", o:"Panturrilha sentado na máquina", t:"a", s1:["15","15","12"], s2:["15","15","8","6"], r:60, lado:"por perna", w:"Kettlebell apoiado no joelho, com uma toalha",
+    d:"Sentado na cadeira, ponta do pé sobre um livro grosso. Suba o calcanhar o máximo, segure 1 segundo e desça alongando. Uma perna por vez para o peso render."}
+  ]},
+ {id:"s1", n:"Superior 1", k:"Halteres", kit:"Halteres cheios, 7 kg cada.", time:"55 a 65 min",
+  note:"Peito, ombros e tríceps passam quase direto para os halteres. As puxadas são o ponto fraco: os exercícios 5 e 6 são substitutos.",
+  ex:[
+   PRANCHA, OBLIQUO,
+   {n:"Remada curvada com halteres, pegada neutra", o:"Remada baixa com barra H", t:"a", s1:["12","12","12"], s2:["12","10","8"], r:45, c:"Pico de 3 s em cima, em todas as repetições", an:"remada",
+    d:"Tronco inclinado, coluna reta, cotovelos rente ao corpo."+ESCAPULA+" Os ombros não sobem junto com os cotovelos."},
+   {n:"Remada unilateral, cotovelo em direção ao quadril", o:"Remada alta unilateral na polia alta", t:"a", s1:rep(3,"12"), s2:rep(3,"12"), r:45, lado:"por lado", w:"1 haltere de 7 kg", an:"remuni",
+    d:"Uma mão apoiada no sofá. Puxe o cotovelo para baixo e para trás, na direção do quadril, e termine com o ombro longe da orelha."+ESCAPULA},
+   {n:"Puxada deslizando de bruços", o:"Barra fixa no gráviton (pegada supinada)", t:"s", s1:rep(3,"10"), s2:rep(3,"12"), r:60, w:"Peso do corpo, toalha sob o peito e a barriga", an:"slidepull",
+    d:"De bruços no piso liso sobre uma toalha, braços estendidos à frente, palmas firmes no chão. Pressione as mãos e puxe o corpo para a frente até elas chegarem na altura do peito. Empurre de volta. É o gesto da puxada, feito no chão."},
+   {n:"Pullover com haltere no chão", o:"Puxada neutra com barra H", t:"s", s1:["12","12","12"], s2:["12","12","10"], r:60, w:"1 haltere de 7 kg, com as duas mãos", an:"pullover",
+    d:"Deitado, joelhos dobrados, haltere acima do peito e cotovelos levemente dobrados. Desça atrás da cabeça até sentir a lateral das costas alongar e volte puxando com os dorsais. Ombros para baixo antes de puxar, lombar no chão."},
+   {n:"Supino com halteres no chão", o:"Supino máquina inclinado", t:"a", s1:["12","12","12"], s2:["12","10","8"], r:45, c:"Desce em 3 s", an:"supino",
+    d:"Deitado, joelhos dobrados, cotovelos a 45° do tronco. Quando ficar leve, troque por flexão de braço com os pés no sofá, que trabalha a parte alta do peito como o supino inclinado."},
+   {n:"Desenvolvimento com halteres em pé", o:"Desenvolvimento com barra reta", t:"a", s1:["12","10","10"], s2:["12","10","8","8"], r:45, an:"desenv",
+    d:"Halteres na altura da clavícula, cotovelos um pouco à frente. Glúteo e abdômen contraídos, peito alto. Empurre na vertical e desça controlando até a altura do queixo. Os dois halteres somam 14 kg, o dobro do que cabe na sua barra."},
+   {n:"Tríceps acima da cabeça com 1 haltere", o:"Tríceps na polia com barra reta", t:"a", s1:rep(3,"12"), s2:rep(3,"12"), r:45, c:"Drop set na última: tire as anilhas de 1,5 e siga até cansar", w:"1 haltere de 7 kg, com as duas mãos", an:"triceps",
+    d:"Em pé, haltere atrás da cabeça seguro com as duas mãos. Cotovelos apontam para cima e ficam parados. Estenda os braços sem travar."},
+   {n:"Tríceps testa no chão com halteres", o:"Tríceps testa no banco inclinado", t:"a", s1:["12","10","10"], s2:["12","10","8"], r:45, w:"4 kg cada, sem as anilhas de 1,5", an:"testa",
+    d:"Deitado, braços estendidos e levemente inclinados para trás da cabeça, palmas uma para a outra. Dobre só os cotovelos até os halteres chegarem na altura da cabeça e estenda sem travar. Cotovelos fixos, apontando para o teto."},
+   HIIT
+  ]},
+ {id:"i2", n:"Inferior 2", k:"Kettlebell", kit:"Kettlebell cheio, 14 kg.", time:"50 a 60 min",
+  note:"Bloco de glúteo e posterior. O terra sumô e o búlgaro funcionam em casa quase como na academia.",
+  ex:[
+   BRACING(rep(5,"40 s")),
+   {n:"Infra deitado no chão", o:"Infra no espaldar", t:"a", s1:rep(3,"12"), s2:rep(3,"15"), r:45, w:"Peso do corpo", an:"pernas",
+    d:"Lombar colada no chão, mãos ao lado do corpo. Suba as pernas e desça devagar, parando antes de a lombar descolar. Sem ter onde se pendurar, o chão é a versão mais próxima."},
+   {n:"Abdução de quadril deitado de lado", o:"Abdução de quadril na máquina", t:"a", s1:["15","12","12"], s2:["15","12","12","10"], r:45, lado:"por lado", c:"Pico de 3 s em cima, em todas as repetições", w:"Peso do corpo", an:"abduc",
+    d:"De lado, perna de baixo dobrada. Suba a perna de cima reta, com o calcanhar um pouco para trás e a ponta do pé para baixo. Sem rolar o quadril."},
+   {n:"Terra sumô + elevação de quadril", o:"Levantamento terra sumô + elevação de quadril com barra (combinados)", t:"a", s1:["12","12","10"], s2:["12","12","10","8 a 10"], r:60, c:"Uma série de cada, depois descansa", an:"sumo",
+    d:"Terra sumô: pés afastados, pontas para fora, kettlebell no chão entre os pés. Quadril para trás, coluna reta, suba apertando o glúteo. Em seguida, elevação de quadril com as costas no sofá e o kettlebell sobre o quadril, com as mesmas repetições."},
+   {n:"Búlgaro inclinado para a frente", t:"i", s1:["10","10","8"], s2:["12","10","8","8"], r:60, lado:"por perna", w:"Kettlebell junto ao peito. Sem peso na primeira semana", an:"bulgaro",
+    d:"Pé de trás no sofá, tronco inclinado à frente com a coluna reta. Desça até a coxa da frente ficar paralela ao chão e suba empurrando o calcanhar. A inclinação leva o trabalho para o glúteo."},
+   {n:"Agachamento sumô com kettlebell", o:"Belt squat", t:"a", s1:["15","12","12"], s2:["15","12","12","10","8"], r:60, c:"Desce em 3 s", an:"sumo",
+    d:"Pés bem afastados, pontas para fora, kettlebell pendurado nos braços estendidos. Tronco ereto, joelhos na direção dos pés. A própria ficha libera fazer com halter quando não há a máquina."},
+   {n:"Coice de glúteo em quatro apoios", o:"Glúteos coice na polia", t:"a", s1:["15","12","12"], s2:["15","12","12","10"], r:60, lado:"por perna", c:"Pausa de 2 s em cima", w:"Peso do corpo", an:"coice",
+    d:"Em quatro apoios, coluna neutra. Com o joelho levemente dobrado, empurre o calcanhar para trás e um pouco para cima, contraindo o glúteo. Não suba demais, para não jogar na lombar. Volte devagar, sem balanço."},
+   {n:"Ponte de posteriores com os calcanhares no sofá", o:"Mesa flexora unilateral", t:"a", s1:["12","10","10"], s2:["12","10","10","8"], r:60, c:"Sobe em 2 s, desce em 3 s", w:"Peso do corpo", an:"pontesofa",
+    d:"Deitado, calcanhares no assento do sofá, joelhos pouco dobrados. Suba o quadril puxando os calcanhares para baixo, contra o sofá. Quando ficar fácil, faça uma perna por vez, como na ficha."}
+  ]},
+ {id:"s2", n:"Superior 2", k:"Halteres", kit:"Halteres cheios, 7 kg cada. A partir da elevação lateral, 4 kg.", time:"55 a 65 min",
+  note:"Mesmo desenho do Superior 1, com outros ângulos. Tire as anilhas de 1,5 antes da elevação lateral e siga assim até a rosca 21.",
+  ex:[
+   PRANCHA, OBLIQUO,
+   {n:"Puxada deslizando de bruços", o:"Puxada neutra com triângulo", t:"s", s1:rep(3,"10"), s2:["12","12","10","10"], r:60, w:"Peso do corpo, toalha sob o peito e a barriga", an:"slidepull",
+    d:"De bruços sobre uma toalha no piso liso, braços estendidos à frente. Ombros descem para longe das orelhas e só então os cotovelos puxam em direção às costelas, arrastando o corpo para a frente. Sem curvar a lombar."},
+   {n:"Remada curvada pronada com halteres", o:"Remada máquina (pegada pronada)", t:"a", s1:["12","12","12"], s2:["12","10","8"], r:45, c:"Pausa de 1 s em cima", an:"remada",
+    d:"Palmas viradas para trás, cotovelos abrindo um pouco para os lados."+ESCAPULA+" A ficha ia de 20 a 30 kg; a pausa compensa parte da diferença."},
+   {n:"Remada unilateral apoiada, pegada neutra", o:"Remada baixa com triângulo", t:"a", s1:rep(3,"12"), s2:["12","10","8"], r:60, lado:"por lado", c:"Pico de 3 s em cima, em todas as repetições", w:"1 haltere de 7 kg", an:"remuni",
+    d:"Uma mão apoiada no sofá, tronco paralelo ao chão. Puxe o haltere até a cintura com o cotovelo rente ao corpo, sem girar o tronco."},
+   {n:"Supino inclinado com as costas no sofá", o:"Supino inclinado com halteres", t:"a", s1:["12","12","12"], s2:["12","10","8"], r:45, c:"Desce em 3 s", an:"supinc",
+    d:"Sentado no chão, parte alta das costas apoiada no assento do sofá, que faz o papel do banco inclinado. Empurre os halteres para cima, na linha dos ombros, e desça controlando até a altura do peito."},
+   {n:"Elevação lateral com halteres", t:"i", s1:["15","12","10"], s2:["15","12","10","8"], r:45, c:"Movimento cadenciado, sem balanço", w:"3 ou 4 kg cada", an:"elevlat",
+    d:"No plano escapular: os braços sobem a meio caminho entre a frente e a lateral do corpo, uns 30° a 45° à frente, até a altura dos ombros."},
+   {n:"Mergulho no sofá", o:"Tríceps paralelas no gráviton", t:"a", s1:rep(3,"10"), s2:rep(3,"10"), r:45, w:"Peso do corpo", an:"dip",
+    d:"Mãos na beirada do sofá, quadril rente ao assento, joelhos dobrados. Desça até os cotovelos chegarem perto de 90° e empurre. Para dificultar, estique as pernas."},
+   {n:"Rosca direta 21 com halteres", o:"Rosca direta 21 na polia baixa", t:"a", s1:rep(3,"21"), s2:rep(4,"21"), r:45, w:"4 kg cada", an:"rosca",
+    d:"Cada série tem 7 repetições da metade para baixo, 7 da metade para cima e 7 completas, sem descanso entre elas. Cotovelos colados no corpo."},
+   HIIT
+  ]},
+ {id:"i3", n:"Inferior 3", k:"Kettlebell", kit:"Kettlebell cheio, 14 kg.", time:"55 a 65 min",
+  note:"Bloco mais longo da ficha. A falta de carga do Smith e do leg press é compensada com trabalho em uma perna.",
+  ex:[
+   BRACING(rep(4,"30 s")), PERDIG,
+   {n:"Agachamento goblet 10 + 10", o:"Leg press horizontal", t:"a", s1:rep(3,"10+10"), s2:rep(3,"10+10"), r:60, an:"goblet",
+    d:"Cada série tem 10 repetições com os pés afastados e as pontas para fora, mais 10 com os pés paralelos na largura do quadril, sem soltar o kettlebell. É a mesma troca de posição de pés que a ficha pede no leg press."},
+   {n:"Afundo", t:"i", s1:["12","12","12"], s2:["15","12","12","12"], r:60, lado:"por perna", w:"Kettlebell junto ao peito", an:"afundo",
+    d:"Dê um passo para trás e desça até o joelho de trás quase tocar o chão. Tronco ereto, joelho da frente na linha do pé. Faça de tênis, porque o piso liso escorrega."},
+   {n:"Agachamento na cadeira com descida em uma perna", o:"Agachamento no Smith", t:"a", s1:["10","10","8"], s2:["12","12","10","8"], r:60, lado:"por perna", c:"Desce em 3 s numa perna, sobe em 2 s com as duas", w:"Peso do corpo", an:"cadeira",
+    d:"De costas para uma cadeira firme, tire um pé do chão e desça em 3 segundos numa perna só até sentar. Apoie os dois pés e suba em 2 segundos. A ficha pede a mesma cadência no Smith."},
+   {n:"Abdução deitado + ostra", o:"Abdução de quadril na máquina + abdução com o corpo à frente (combinados)", t:"a", s1:["15","12","10"], s2:["15","12","10","10"], r:45, lado:"por lado", c:"Uma série de cada, depois descansa", w:"Peso do corpo", an:"abduc",
+    d:"Abdução: de lado, suba a perna de cima reta. Ostra: de lado, joelhos dobrados e pés juntos, abra o joelho de cima sem rolar o quadril para trás. As duas variações cobrem os dois ângulos que a ficha faz na máquina."},
+   {n:"Elevação de quadril em uma perna, no sofá", o:"Elevação de quadril na máquina", t:"a", s1:["10","10","8"], s2:["10","10","8","6"], r:60, lado:"por perna", c:"Pico de 3 s em cima", w:"Kettlebell sobre o quadril", an:"thrust",
+    d:"Costas no sofá, uma perna estendida no ar. Suba empurrando o calcanhar da perna de apoio e segure em cima. A ficha pede mini band acima do joelho; sem ela, a versão em uma perna dá a dificuldade."},
+   {n:"Bom dia com kettlebell", o:"Bom dia", t:"a", s1:rep(3,"10"), s2:rep(3,"10"), r:60, w:"Kettlebell abraçado junto ao peito", an:"bomdia",
+    d:"Joelhos levemente dobrados. Empurre o quadril para trás com a coluna reta até o tronco quase ficar paralelo ao chão e volte apertando o glúteo."},
+   {n:"Panturrilha em pé, uma perna", o:"Panturrilha no leg press horizontal", t:"a", s1:["15","15","12"], s2:["15","15","8","8"], r:45, lado:"por perna", w:"Kettlebell na mão do mesmo lado",
+    d:"Ponta do pé num degrau ou livro grosso, a outra mão na parede. O calcanhar sobe reto, sem girar para fora, como se houvesse uma bolinha entre os calcanhares. Uma perna por vez para compensar a carga."}
+  ]}
+];
+var TAGS = {i:"Igual à ficha", a:"Adaptado", s:"Substituto próximo"};
+
+/* ---------- Estado ---------- */
+function pad(n){ return (n<10?"0":"")+n; }
+function iso(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function dFmt(s){ return s.slice(8,10)+"/"+s.slice(5,7); }
+function lsGet(k,def){ try{ var v=JSON.parse(localStorage.getItem(k)); return v==null?def:v; }catch(e){ return def; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;"); }
+
+var TODAY = iso(new Date());
+var hoje = lsGet("forja-hoje", null); if(!hoje || hoje.date!==TODAY) hoje = {date:TODAY, s:{}};
+var perfil = lsGet("forja-perfil", null) || {fase:1, cargas:{}}; if(!perfil.cargas) perfil.cargas = {};
+var hist = lsGet("forja-hist", []) || [];
+var current = lsGet("forja-bloco", 1); if(!(current>=0 && current<BLOCKS.length)) current = 1;
+var CFG = window.FORJA_CONFIG || {}, sb = null, user = null, saving = false;
+var dirty = lsGet("forja-dirty", false);
+
+function persist(name){
+  if(name==="hoje") lsSet("forja-hoje",hoje); else lsSet("forja-perfil",perfil);
+  dirty = true; lsSet("forja-dirty",true); pushState();
+}
+function pushState(){
+  if(!sb || !user || saving || !dirty) return;
+  saving = true; dirty = false; lsSet("forja-dirty",false);
+  var fail = function(){ dirty = true; lsSet("forja-dirty",true); };
+  sb.from("forja_estado").upsert({user_id:user.id, fase:perfil.fase, cargas:perfil.cargas, hoje:hoje, updated_at:new Date().toISOString()})
+    .then(function(r){ if(r.error) fail(); }, fail)
+    .then(function(){ saving = false; });
+}
+function setsOf(e){ return perfil.fase===2 ? e.s2 : e.s1; }
+function exId(b,k){ return BLOCKS[b].id+"-"+k; }
+function marks(b,k){
+  var n = setsOf(BLOCKS[b].ex[k]).length, m = (hoje.s[exId(b,k)]||""), out = [];
+  for(var i=0;i<n;i++) out.push(m.charAt(i)==="1");
+  return out;
+}
+function blockCount(b){
+  var done=0, total=0;
+  BLOCKS[b].ex.forEach(function(e,k){ marks(b,k).forEach(function(v){ total++; if(v) done++; }); });
+  return [done,total];
+}
+function lastDone(id){
+  var l = null; hist.forEach(function(h){ if(h.block===id && (!l || h.date>l)) l = h.date; }); return l;
+}
+
+/* ---------- Render ---------- */
+var blocksEl = document.getElementById("blocks"), detail = document.getElementById("detail");
+function renderFase(){
+  Array.prototype.forEach.call(document.querySelectorAll("#fase button"), function(b){
+    b.setAttribute("aria-pressed", String(+b.getAttribute("data-f")===perfil.fase));
+  });
+}
+function renderBlocks(){
+  var h = "";
+  BLOCKS.forEach(function(B,i){
+    var c = blockCount(i), l = lastDone(B.id), st = "";
+    if(c[0]===c[1]) st = "Feito hoje ✓"; else if(c[0]>0) st = c[0]+" de "+c[1]+" séries"; else if(l) st = "Último: "+dFmt(l);
+    h += '<button type="button" class="blk" data-i="'+i+'" aria-pressed="'+(i===current)+'"><span class="n">'+B.n+'</span><span class="k">'+B.k+'</span>'
+      + '<span class="st">'+(st||"&nbsp;")+'</span><span class="pb"><i style="width:'+(c[1]?c[0]/c[1]*100:0)+'%"></i></span></button>';
+  });
+  blocksEl.innerHTML = h;
+}
+function renderDetail(){
+  var B = BLOCKS[current], b = current, h = "";
+  h += '<div class="head"><span class="eyebrow">'+(perfil.fase===2?"Fase 2 · volume da ficha":"Fase 1 · 3 séries")+'</span><h2>'+B.n+'</h2>'
+     + '<div class="meta"><span>Duração <b>'+B.time+'</b></span><span>Kit <b>'+esc(B.kit)+'</b></span></div></div>'
+     + '<p class="note">'+esc(B.note)+'</p><div class="exlist">';
+  B.ex.forEach(function(e,k){
+    var id = exId(b,k), m = marks(b,k), sets = setsOf(e), all = m.every(function(v){return v;});
+    h += '<article class="ex'+(all?' done':'')+'" data-k="'+k+'"><div class="extop"><span class="exnum num">'+pad(k+1)+' de '+pad(B.ex.length)+'</span>'
+      + '<h3 class="exname">'+esc(e.n)+'</h3><div class="tags"><span class="tag '+e.t+'">'+TAGS[e.t]+'</span>'
+      + (e.o?'<span class="orig">Na ficha: '+esc(e.o)+'</span>':'')+'</div></div>';
+    h += '<div class="sets" role="group" aria-label="Séries">';
+    sets.forEach(function(r,j){
+      h += '<button type="button" class="set num" data-j="'+j+'" aria-pressed="'+m[j]+'" aria-label="Série '+(j+1)+', '+r+(m[j]?', feita':'')+'">'+esc(r)+'<small>série '+(j+1)+'</small></button>';
+    });
+    h += '</div><div class="chips">'+(e.lado?'<span class="chip">'+e.lado+'</span>':'')+(e.r?'<span class="chip num">Descanso '+e.r+' s</span>':'')
+      + (e.c?'<span class="chip tec">'+esc(e.c)+'</span>':'')+'</div>';
+    if(e.bike){ h += '<div class="effort" role="img" aria-label="Um minuto forte alternado com um minuto leve, por 15 minutos">';
+      for(var x=0;x<15;x++) h += '<i class="'+(x%2?'easy':'hard')+'"></i>'; h += '</div>'; }
+    h += '<div class="demo'+(e.an?'':' nofig')+'">'+(e.an?'<button type="button" class="figbtn" aria-label="Animação de '+esc(e.n)+'. Toque para pausar ou continuar.">'+figSVG(e.an)+'</button>':'')
+      + '<p class="cue">'+esc(e.d)+'</p></div>';
+    if(!e.bike && B.id!=="al" && (e.w||"").indexOf("Peso do corpo")!==0) h += '<label class="load" for="w-'+id+'">Carga usada<input id="w-'+id+'" type="text" data-w="'+id+'" autocomplete="off" placeholder="'+esc(e.w||B.kit.split(".")[0])+'" value="'+esc(perfil.cargas[id]||"")+'"></label>';
+    h += '</article>';
+  });
+  h += '</div>';
+  var c = blockCount(b);
+  if(c[0]===c[1]) h += '<p class="finish">Bloco concluído. Mais um dia de ferro batido.</p>';
+  detail.innerHTML = h;
+  figs = Array.prototype.slice.call(detail.querySelectorAll(".fig"));
+  figs.forEach(function(f){ drawFig(f, playing?0:0.5); });
+}
+function renderHist(){
+  var mon = new Date(); mon.setDate(mon.getDate()-((mon.getDay()+6)%7)); var wk = iso(mon);
+  var tr = hist.filter(function(h){ return h.block!=="al"; });
+  document.getElementById("h-total").textContent = tr.length;
+  document.getElementById("h-week").textContent = tr.filter(function(h){ return h.date>=wk; }).length;
+  if(tr.length){
+    var last = tr.slice().sort(function(a,b){ return a.date<b.date?1:-1; })[0], nm = "";
+    BLOCKS.forEach(function(B){ if(B.id===last.block) nm = B.n; });
+    document.getElementById("h-last").textContent = "Último treino: "+nm+", em "+dFmt(last.date)+". Os alongamentos não entram na contagem.";
+  }
+}
+function renderAll(){ renderFase(); renderBlocks(); renderDetail(); renderHist(); }
+
+function checkFinished(b){
+  var c = blockCount(b), id = BLOCKS[b].id, key = TODAY+"_"+id;
+  var has = hist.some(function(h){ return h.date===TODAY && h.block===id; });
+  if(c[0]===c[1] && !has){
+    hist.push({date:TODAY, block:id}); lsSet("forja-hist",hist);
+    if(sb && user) sb.from("forja_historico").upsert({user_id:user.id, data:TODAY, bloco:id}).then(function(){},function(){});
+  } else if(c[0]<c[1] && has){
+    hist = hist.filter(function(h){ return !(h.date===TODAY && h.block===id); }); lsSet("forja-hist",hist);
+    if(sb && user) sb.from("forja_historico").delete().match({user_id:user.id, data:TODAY, bloco:id}).then(function(){},function(){});
+  }
+}
+
+/* ---------- Cronômetro de descanso ---------- */
+var timerEl = document.getElementById("timer"), tEnd = 0, tTotal = 0, tInt = null;
+function startTimer(sec,sub){
+  tTotal = sec*1000; tEnd = Date.now()+tTotal;
+  timerEl.className = "timer on";
+  document.getElementById("t-title").textContent = "Descanso";
+  document.getElementById("t-sub").textContent = sub;
+  document.getElementById("t-skip").textContent = "Pular";
+  if(tInt) clearInterval(tInt);
+  tInt = setInterval(tick,200); tick();
+}
+function tick(){
+  var left = tEnd-Date.now();
+  if(left<=0){
+    clearInterval(tInt); tInt = null;
+    timerEl.className = "timer on end";
+    document.getElementById("t-time").textContent = "0:00";
+    document.getElementById("t-bar").style.width = "0%";
+    document.getElementById("t-title").textContent = "Próxima série";
+    document.getElementById("t-skip").textContent = "Fechar";
+    try{ if(navigator.vibrate) navigator.vibrate([200,100,200]); }catch(e){}
+    return;
+  }
+  var s = Math.ceil(left/1000);
+  document.getElementById("t-time").textContent = Math.floor(s/60)+":"+pad(s%60);
+  document.getElementById("t-bar").style.width = (left/tTotal*100)+"%";
+}
+document.getElementById("t-skip").addEventListener("click", function(){
+  if(tInt) clearInterval(tInt); tInt = null; timerEl.className = "timer";
+});
+
+/* ---------- Eventos ---------- */
+document.getElementById("fase").addEventListener("click", function(ev){
+  var b = ev.target.closest("button"); if(!b) return;
+  var f = +b.getAttribute("data-f"); if(f===perfil.fase) return;
+  perfil.fase = f; persist("perfil"); renderAll();
+});
+blocksEl.addEventListener("click", function(ev){
+  var b = ev.target.closest(".blk"); if(!b) return;
+  current = +b.getAttribute("data-i"); lsSet("forja-bloco",current); renderBlocks(); renderDetail();
+  detail.scrollIntoView({block:"start"});
+});
+detail.addEventListener("click", function(ev){
+  if(ev.target.closest(".figbtn")){ playing = !playing; return; }
+  var s = ev.target.closest(".set"); if(!s) return;
+  var art = s.closest(".ex"), k = +art.getAttribute("data-k"), j = +s.getAttribute("data-j");
+  var e = BLOCKS[current].ex[k], m = marks(current,k), was = BLOCKS[current].ex.length && blockCount(current);
+  m[j] = !m[j];
+  hoje.s[exId(current,k)] = m.map(function(v){ return v?"1":"0"; }).join("");
+  persist("hoje"); checkFinished(current);
+  s.setAttribute("aria-pressed", String(m[j]));
+  art.className = "ex"+(m.every(function(v){return v;})?" done":"");
+  var c = blockCount(current);
+  if((c[0]===c[1]) !== (was[0]===was[1])){ var y = window.scrollY; renderDetail(); window.scrollTo(0,y); }
+  renderBlocks(); renderHist();
+  if(m[j] && e.r && c[0]<c[1]){
+    var next = m.indexOf(false);
+    startTimer(e.r, next>=0 ? "Depois: série "+(next+1)+" de "+e.n : "Depois: próximo exercício");
+  }
+});
+detail.addEventListener("change", function(ev){
+  var id = ev.target.getAttribute && ev.target.getAttribute("data-w"); if(!id) return;
+  var v = ev.target.value.trim().slice(0,40);
+  if(v) perfil.cargas[id] = v; else delete perfil.cargas[id];
+  persist("perfil");
+});
+document.getElementById("reset").addEventListener("click", function(){
+  BLOCKS.forEach(function(B,i){ hoje.s = {}; });
+  persist("hoje"); BLOCKS.forEach(function(B,i){ checkFinished(i); }); renderAll();
+});
+
+/* ---------- Conta e dados no Supabase ---------- */
+var authEl = document.getElementById("auth"), amsg = document.getElementById("a-msg");
+function typing(){ var a = document.activeElement; return a && a.tagName==="INPUT"; }
+function showAuth(on){ document.body.classList.toggle("locked", on); authEl.hidden = !on; }
+function authErr(e){
+  var m = (e && e.message) || "";
+  if(/Invalid login/i.test(m)) return "E-mail ou senha incorretos.";
+  if(/Signups not allowed|signup.*disabled/i.test(m)) return "O cadastro de novas contas está fechado.";
+  if(/at least|weak/i.test(m)) return "A senha precisa ter pelo menos 6 caracteres.";
+  if(/already registered/i.test(m)) return "Este e-mail já tem conta. Use Entrar.";
+  if(/fetch|network/i.test(m)) return "Sem conexão. Tente de novo quando a internet voltar.";
+  return m || "Não foi possível concluir. Tente de novo.";
+}
+function loadRemote(){
+  if(!sb || !user) return;
+  if(dirty){ pushState(); }
+  else sb.from("forja_estado").select("fase,cargas,hoje").eq("user_id",user.id).maybeSingle().then(function(r){
+    if(r.error || !r.data || dirty || saving) return;
+    perfil = {fase: r.data.fase===2?2:1, cargas: r.data.cargas || {}}; lsSet("forja-perfil",perfil);
+    if(r.data.hoje && r.data.hoje.date===TODAY && r.data.hoje.s){ hoje = {date:TODAY, s:r.data.hoje.s}; lsSet("forja-hoje",hoje); }
+    if(!typing()) renderAll();
+  }, function(){});
+  var local = hist.map(function(h){ return {user_id:user.id, data:h.date, bloco:h.block}; });
+  var up = local.length ? sb.from("forja_historico").upsert(local) : Promise.resolve();
+  Promise.resolve(up).then(function(){
+    return sb.from("forja_historico").select("data,bloco").eq("user_id",user.id);
+  }).then(function(r){
+    if(!r || r.error || !r.data) return;
+    hist = r.data.map(function(x){ return {date:x.data, block:x.bloco}; }); lsSet("forja-hist",hist);
+    renderBlocks(); renderHist();
+  }, function(){});
+}
+function setUser(u){
+  var owner = lsGet("forja-user", null);
+  if(u && owner && owner!==u.id){
+    hoje = {date:TODAY, s:{}}; perfil = {fase:1, cargas:{}}; hist = []; dirty = false;
+    lsSet("forja-hoje",hoje); lsSet("forja-perfil",perfil); lsSet("forja-hist",hist); lsSet("forja-dirty",false);
+  }
+  user = u || null;
+  if(user){
+    lsSet("forja-user",user.id); showAuth(false);
+    document.getElementById("acct").textContent = "Conectado como "+user.email+".";
+    document.getElementById("logout").hidden = false;
+    renderAll(); loadRemote();
+  } else { showAuth(true); }
+}
+if(CFG.url && CFG.key && window.supabase){
+  sb = window.supabase.createClient(CFG.url, CFG.key);
+  showAuth(true);
+  sb.auth.onAuthStateChange(function(ev, session){
+    if(ev==="PASSWORD_RECOVERY"){
+      showAuth(true); document.getElementById("login").hidden = true; document.getElementById("newpass").hidden = false;
+      document.getElementById("auth-title").textContent = "Nova senha"; return;
+    }
+    if(ev==="TOKEN_REFRESHED" || ev==="USER_UPDATED") return;
+    setTimeout(function(){ setUser(session && session.user); }, 0);
+  });
+  document.getElementById("login").addEventListener("submit", function(ev){
+    ev.preventDefault(); amsg.textContent = "Entrando…";
+    sb.auth.signInWithPassword({email:document.getElementById("a-email").value.trim(), password:document.getElementById("a-pass").value})
+      .then(function(r){ amsg.textContent = r.error ? authErr(r.error) : ""; }, function(e){ amsg.textContent = authErr(e); });
+  });
+  document.getElementById("a-signup").addEventListener("click", function(){
+    var em = document.getElementById("a-email").value.trim(), pw = document.getElementById("a-pass").value;
+    if(!em || pw.length<6){ amsg.textContent = "Preencha o e-mail e uma senha de pelo menos 6 caracteres."; return; }
+    amsg.textContent = "Criando conta…";
+    sb.auth.signUp({email:em, password:pw, options:{emailRedirectTo:location.origin+location.pathname}})
+      .then(function(r){ amsg.textContent = r.error ? authErr(r.error) : (r.data && r.data.session ? "" : "Conta criada. Confirme pelo link enviado ao seu e-mail e depois entre."); }, function(e){ amsg.textContent = authErr(e); });
+  });
+  document.getElementById("a-forgot").addEventListener("click", function(){
+    var em = document.getElementById("a-email").value.trim();
+    if(!em){ amsg.textContent = "Digite seu e-mail acima primeiro."; return; }
+    sb.auth.resetPasswordForEmail(em, {redirectTo:location.origin+location.pathname})
+      .then(function(r){ amsg.textContent = r.error ? authErr(r.error) : "Enviamos um link de recuperação para "+em+"."; }, function(e){ amsg.textContent = authErr(e); });
+  });
+  document.getElementById("newpass").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var pw = document.getElementById("a-new").value;
+    if(pw.length<6){ amsg.textContent = "A senha precisa ter pelo menos 6 caracteres."; return; }
+    sb.auth.updateUser({password:pw}).then(function(r){
+      if(r.error){ amsg.textContent = authErr(r.error); return; }
+      amsg.textContent = ""; document.getElementById("login").hidden = false; document.getElementById("newpass").hidden = true;
+      document.getElementById("auth-title").textContent = "Entrar";
+      sb.auth.getSession().then(function(x){ setUser(x.data.session && x.data.session.user); });
+    }, function(e){ amsg.textContent = authErr(e); });
+  });
+  document.getElementById("logout").addEventListener("click", function(){
+    ["forja-hoje","forja-perfil","forja-hist","forja-dirty","forja-user","forja-bloco"].forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
+    sb.auth.signOut().then(function(){ location.reload(); }, function(){ location.reload(); });
+  });
+  window.addEventListener("online", pushState);
+  document.addEventListener("visibilitychange", function(){ if(!document.hidden && user){ if(dirty) pushState(); else loadRemote(); } });
+} else {
+  document.getElementById("acct").textContent = "Sem conta configurada: os dados ficam só neste aparelho.";
+}
+
+renderAll();
+requestAnimationFrame(frame);
+if("serviceWorker" in navigator && location.protocol==="https:"){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
+</script>
+</body>
+</html>
