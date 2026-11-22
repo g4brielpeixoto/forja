@@ -1,5 +1,5 @@
 // Cache do app para abrir sem internet. Chamadas ao Supabase nunca passam pelo cache.
-const CACHE = "forja-v2";
+const CACHE = "forja-v3";
 const SHELL = ["./", "index.html", "config.js", "manifest.webmanifest", "icon-192.png",
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
