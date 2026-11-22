@@ -22,7 +22,7 @@
   --bg:#F3F5F8; --surface:#ffffff; --ink:#14213D; --muted:#5A6580; --line:#DCE1EA;
   --brasa:#FF7A1A; --brasa-ink:#A84600; --brasa-soft:#FFEBDC; --on-brasa:#14213D;
   --menta:#2BB28A; --menta-ink:#12745A; --menta-soft:#DDF4EC;
-  --limb-far:#A7B0C2;
+  --limb-far:#A7B0C2; --falha:#C93A3A; --falha-soft:#FBE3E3;
   --display:"Outfit","Trebuchet MS",Arial,sans-serif;
   --body:"Figtree","Segoe UI",Roboto,Arial,sans-serif;
 }
@@ -32,7 +32,7 @@
     --bg:#0B1322; --surface:#14213D; --ink:#EEF2F8; --muted:#9BA8C2; --line:#263759;
     --brasa:#FF8A33; --brasa-ink:#FFA35C; --brasa-soft:#3A2412; --on-brasa:#14213D;
     --menta:#3CCB9F; --menta-ink:#5FDDB5; --menta-soft:#123A30;
-    --limb-far:#55648A;
+    --limb-far:#55648A; --falha:#FF7B7B; --falha-soft:#3D1A1E;
   }
 }
 :root[data-theme="dark"]{
@@ -40,7 +40,7 @@
   --bg:#0B1322; --surface:#14213D; --ink:#EEF2F8; --muted:#9BA8C2; --line:#263759;
   --brasa:#FF8A33; --brasa-ink:#FFA35C; --brasa-soft:#3A2412; --on-brasa:#14213D;
   --menta:#3CCB9F; --menta-ink:#5FDDB5; --menta-soft:#123A30;
-  --limb-far:#55648A;
+  --limb-far:#55648A; --falha:#FF7B7B; --falha-soft:#3D1A1E;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -143,6 +143,29 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--brasa);outline-
 .mini .big{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.1}
 .mini .lab{font-size:13px;color:var(--muted)}
 .btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 14px;font-weight:500;font-size:14px;cursor:pointer;align-self:flex-start}
+.streak{display:flex;align-items:center;gap:14px}
+.streak .n{font-family:var(--display);font-weight:700;font-size:64px;line-height:.9;color:var(--brasa-ink)}
+.streak .t{display:flex;flex-direction:column;gap:2px}
+.streak .t b{font-family:var(--display);font-weight:600;font-size:20px;line-height:1.1}
+.streak .t span{font-size:14px;color:var(--muted)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal .hd{font-size:11px;font-weight:600;color:var(--muted);text-align:center}
+.cal .c{aspect-ratio:1;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;border:1.5px solid transparent;color:var(--muted)}
+.cal .ok{background:var(--menta);color:#0b2b22}
+.cal .falha{background:var(--falha-soft);border-color:var(--falha);color:var(--falha)}
+.cal .off,.cal .antes{background:var(--bg)}
+.cal .antes{opacity:.45}
+.cal .prox,.cal .hoje{border-color:var(--line);border-style:dashed;color:var(--ink)}
+.cal .tdy{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--brasa)}
+.calleg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted)}
+.calleg span{display:inline-flex;align-items:center;gap:5px}
+.calleg i{width:12px;height:12px;border-radius:4px;display:inline-block;border:1.5px solid transparent}
+.dias{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.dias button{appearance:none;border:1.5px solid var(--line);background:var(--bg);color:var(--muted);border-radius:9px;padding:8px 0;font-weight:600;font-size:14px;cursor:pointer}
+.dias button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.today{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--bg)}
+.today b{font-family:var(--display);font-weight:600;font-size:17px}
+.today span{display:block;font-size:13px;color:var(--muted)}
 body.locked .wrap > section:not(#auth), body.locked .timer{display:none}
 #auth[hidden], #newpass[hidden], #logout[hidden]{display:none}
 .aform{display:flex;flex-direction:column;gap:10px}
@@ -187,6 +210,24 @@ body.locked .wrap > section:not(#auth), body.locked .timer{display:none}
   <p class="amsg" id="a-msg" role="status"></p>
 </section>
 
+<section class="card stack" id="habit" aria-label="Sequência de treinos">
+  <div class="streak"><span class="n num" id="hb-n">0</span><span class="t"><b id="hb-lab">dias sem falhar</b><span id="hb-msg"></span></span></div>
+  <div class="hist">
+    <div class="mini"><div class="lab">Recorde</div><div class="big num" id="hb-best">0</div></div>
+    <div class="mini"><div class="lab">Esta semana</div><div class="big num" id="hb-week">0 de 5</div></div>
+  </div>
+  <div class="today" id="hb-today"></div>
+  <div class="cal" id="hb-cal" role="img" aria-label="Calendário das últimas cinco semanas"></div>
+  <div class="calleg">
+    <span><i style="background:var(--menta)"></i>Treinou</span>
+    <span><i style="background:var(--falha-soft);border-color:var(--falha)"></i>Falhou</span>
+    <span><i style="background:var(--bg);border-color:var(--line)"></i>Descanso</span>
+    <span><i style="border-color:var(--line);border-style:dashed"></i>Planejado</span>
+  </div>
+  <p class="small muted">Meus dias de treino. Dia de descanso não quebra a sequência.</p>
+  <div class="dias" id="hb-dias" role="group" aria-label="Dias de treino na semana"></div>
+</section>
+
 <section class="stack" aria-label="Fase do treino">
   <div class="seg" id="fase">
     <button type="button" data-f="1"><b>Fase 1</b>3 séries, para começar</button>
@@ -213,7 +254,7 @@ body.locked .wrap > section:not(#auth), body.locked .timer{display:none}
     <li><b>Um kit por dia.</b> Blocos de inferior usam só o kettlebell (até 14 kg). Blocos de superior usam só os halteres (7 kg cada). Você monta uma vez por treino.</li>
     <li><b>Carga fixa pede técnica.</b> A ficha sobe o peso a cada série. Em casa o peso não sobe, então a dificuldade vem da descida lenta, da pausa e das versões em uma perna. A etiqueta laranja de cada exercício diz qual usar.</li>
     <li><b>Última série perto do limite.</b> Termine com 1 ou 2 repetições de sobra, sem perder a forma.</li>
-    <li><b>Ordem dos blocos.</b> Inferior 1, Superior 1, Inferior 2, Superior 2, Inferior 3, um por dia de treino. Começando, 3 a 4 blocos por semana bastam. Alongamentos todos os dias.</li>
+    <li><b>Ordem dos blocos.</b> Inferior 1, Superior 1, Inferior 2, Superior 2, Inferior 3, em rodízio. O app indica o próximo da fila a cada dia de treino. Começando, 3 a 4 dias por semana bastam. Alongamentos todos os dias.</li>
     <li><b>Quando passar para a Fase 2.</b> Depois de 3 a 4 semanas fechando todas as séries da Fase 1 com boa forma.</li>
     <li><b>Dor aguda em articulação, tontura ou dor no peito:</b> pare na hora.</li>
   </ul>
@@ -492,8 +533,11 @@ function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").rep
 var TODAY = iso(new Date());
 var hoje = lsGet("forja-hoje", null); if(!hoje || hoje.date!==TODAY) hoje = {date:TODAY, s:{}};
 var perfil = lsGet("forja-perfil", null) || {fase:1, cargas:{}}; if(!perfil.cargas) perfil.cargas = {};
+function okDias(d){ return Array.isArray(d) ? d.filter(function(x){ return x>=0 && x<=6 && x===Math.floor(x); }) : [0,1,2,3,4]; }
+perfil.dias = okDias(perfil.dias);
 var hist = lsGet("forja-hist", []) || [];
 var current = lsGet("forja-bloco", 1); if(!(current>=0 && current<BLOCKS.length)) current = 1;
+var ORDER = ["i1","s1","i2","s2","i3"];
 var CFG = window.FORJA_CONFIG || {}, sb = null, user = null, saving = false;
 var dirty = lsGet("forja-dirty", false);
 
@@ -505,7 +549,7 @@ function pushState(){
   if(!sb || !user || saving || !dirty) return;
   saving = true; dirty = false; lsSet("forja-dirty",false);
   var fail = function(){ dirty = true; lsSet("forja-dirty",true); };
-  sb.from("forja_estado").upsert({user_id:user.id, fase:perfil.fase, cargas:perfil.cargas, hoje:hoje, updated_at:new Date().toISOString()})
+  sb.from("forja_estado").upsert({user_id:user.id, fase:perfil.fase, cargas:perfil.cargas, dias:perfil.dias, hoje:hoje, updated_at:new Date().toISOString()})
     .then(function(r){ if(r.error) fail(); }, fail)
     .then(function(){ saving = false; });
 }
@@ -573,6 +617,7 @@ function renderDetail(){
   figs.forEach(function(f){ drawFig(f, playing?0:0.5); });
 }
 function renderHist(){
+  renderHabit();
   var mon = new Date(); mon.setDate(mon.getDate()-((mon.getDay()+6)%7)); var wk = iso(mon);
   var tr = hist.filter(function(h){ return h.block!=="al"; });
   document.getElementById("h-total").textContent = tr.length;
@@ -582,6 +627,55 @@ function renderHist(){
     BLOCKS.forEach(function(B){ if(B.id===last.block) nm = B.n; });
     document.getElementById("h-last").textContent = "Último treino: "+nm+", em "+dFmt(last.date)+". Os alongamentos não entram na contagem.";
   }
+}
+function pDate(s){ return new Date(+s.slice(0,4), +s.slice(5,7)-1, +s.slice(8,10)); }
+function addDays(s,n){ var d = pDate(s); d.setDate(d.getDate()+n); return iso(d); }
+function wd(s){ return (pDate(s).getDay()+6)%7; }
+function habit(){
+  var done = {}, first = TODAY;
+  hist.forEach(function(h){ if(h.block!=="al"){ done[h.date] = 1; if(h.date<first) first = h.date; } });
+  var plan = function(d){ return perfil.dias.indexOf(wd(d))>=0; };
+  var status = function(d){
+    if(done[d]) return "ok";
+    if(d>TODAY) return plan(d) ? "prox" : "off";
+    if(d<first) return "antes";
+    if(!plan(d)) return "off";
+    return d===TODAY ? "hoje" : "falha";
+  };
+  var streak = 0, best = 0, run = 0, d, s, guard = 0;
+  for(d=TODAY; d>=first && guard<4000; d=addDays(d,-1), guard++){ s = status(d); if(s==="ok") streak++; else if(s==="falha") break; }
+  for(d=first, guard=0; d<=TODAY && guard<4000; d=addDays(d,1), guard++){ s = status(d); if(s==="ok"){ run++; if(run>best) best = run; } else if(s==="falha") run = 0; }
+  return {status:status, streak:streak, best:best, done:done, plan:plan};
+}
+function nextBlock(){
+  var last = null;
+  hist.forEach(function(h){ if(h.block!=="al" && h.date<TODAY && (!last || h.date>last.date || (h.date===last.date && ORDER.indexOf(h.block)>ORDER.indexOf(last.block)))) last = h; });
+  var id = last ? ORDER[(ORDER.indexOf(last.block)+1)%ORDER.length] : ORDER[0], idx = 1;
+  BLOCKS.forEach(function(B,i){ if(B.id===id) idx = i; });
+  return idx;
+}
+function renderHabit(){
+  var H = habit(), n = H.streak, st = H.status(TODAY), msg;
+  document.getElementById("hb-n").textContent = n;
+  document.getElementById("hb-lab").textContent = n===1 ? "dia sem falhar" : "dias sem falhar";
+  if(st==="ok") msg = "Hoje já está garantido.";
+  else if(st==="hoje") msg = n ? "Treine hoje para chegar a "+(n+1)+"." : "Sua sequência começa com o treino de hoje.";
+  else msg = n ? "Hoje é descanso. A sequência continua." : "Hoje é descanso. A sequência começa no próximo treino.";
+  document.getElementById("hb-msg").textContent = msg;
+  document.getElementById("hb-best").textContent = H.best;
+  var mon = addDays(TODAY, -wd(TODAY)), wk = 0, i, d;
+  for(i=0;i<7;i++){ if(H.done[addDays(mon,i)]) wk++; }
+  document.getElementById("hb-week").textContent = wk+" de "+perfil.dias.length;
+  var nb = nextBlock(), td = document.getElementById("hb-today");
+  if(st==="ok") td.innerHTML = '<div><b>Treino de hoje concluído</b><span>Próximo da fila: '+BLOCKS[nb].n+'</span></div>';
+  else td.innerHTML = '<div><b>'+(st==="hoje"?"Treino de hoje: ":"Próximo treino: ")+BLOCKS[nb].n+'</b><span>'+BLOCKS[nb].k+' · '+BLOCKS[nb].time+'</span></div><button type="button" class="btn" data-open="'+nb+'">Abrir</button>';
+  var h = "", L = ["S","T","Q","Q","S","S","D"], start = addDays(mon,-28);
+  L.forEach(function(x){ h += '<span class="hd">'+x+'</span>'; });
+  for(i=0;i<35;i++){ d = addDays(start,i); h += '<span class="c num '+H.status(d)+(d===TODAY?' tdy':'')+'">'+(+d.slice(8,10))+'</span>'; }
+  document.getElementById("hb-cal").innerHTML = h;
+  var N = ["Segunda","Terça","Quarta","Quinta","Sexta","Sábado","Domingo"]; h = "";
+  for(i=0;i<7;i++) h += '<button type="button" data-d="'+i+'" aria-pressed="'+(perfil.dias.indexOf(i)>=0)+'" aria-label="'+N[i]+'">'+L[i]+'</button>';
+  document.getElementById("hb-dias").innerHTML = h;
 }
 function renderAll(){ renderFase(); renderBlocks(); renderDetail(); renderHist(); }
 
@@ -634,6 +728,14 @@ document.getElementById("fase").addEventListener("click", function(ev){
   var f = +b.getAttribute("data-f"); if(f===perfil.fase) return;
   perfil.fase = f; persist("perfil"); renderAll();
 });
+document.getElementById("habit").addEventListener("click", function(ev){
+  var o = ev.target.closest("[data-open]"), b = ev.target.closest("[data-d]");
+  if(o){ current = +o.getAttribute("data-open"); lsSet("forja-bloco",current); renderBlocks(); renderDetail(); detail.scrollIntoView({block:"start"}); return; }
+  if(!b) return;
+  var i = +b.getAttribute("data-d"), k = perfil.dias.indexOf(i);
+  if(k>=0) perfil.dias.splice(k,1); else { perfil.dias.push(i); perfil.dias.sort(); }
+  persist("perfil"); renderHabit();
+});
 blocksEl.addEventListener("click", function(ev){
   var b = ev.target.closest(".blk"); if(!b) return;
   current = +b.getAttribute("data-i"); lsSet("forja-bloco",current); renderBlocks(); renderDetail();
@@ -684,9 +786,9 @@ function authErr(e){
 function loadRemote(){
   if(!sb || !user) return;
   if(dirty){ pushState(); }
-  else sb.from("forja_estado").select("fase,cargas,hoje").eq("user_id",user.id).maybeSingle().then(function(r){
+  else sb.from("forja_estado").select("fase,cargas,dias,hoje").eq("user_id",user.id).maybeSingle().then(function(r){
     if(r.error || !r.data || dirty || saving) return;
-    perfil = {fase: r.data.fase===2?2:1, cargas: r.data.cargas || {}}; lsSet("forja-perfil",perfil);
+    perfil = {fase: r.data.fase===2?2:1, cargas: r.data.cargas || {}, dias: okDias(r.data.dias)}; lsSet("forja-perfil",perfil);
     if(r.data.hoje && r.data.hoje.date===TODAY && r.data.hoje.s){ hoje = {date:TODAY, s:r.data.hoje.s}; lsSet("forja-hoje",hoje); }
     if(!typing()) renderAll();
   }, function(){});
@@ -703,7 +805,7 @@ function loadRemote(){
 function setUser(u){
   var owner = lsGet("forja-user", null);
   if(u && owner && owner!==u.id){
-    hoje = {date:TODAY, s:{}}; perfil = {fase:1, cargas:{}}; hist = []; dirty = false;
+    hoje = {date:TODAY, s:{}}; perfil = {fase:1, cargas:{}, dias:[0,1,2,3,4]}; hist = []; dirty = false;
     lsSet("forja-hoje",hoje); lsSet("forja-perfil",perfil); lsSet("forja-hist",hist); lsSet("forja-dirty",false);
   }
   user = u || null;
@@ -764,6 +866,7 @@ if(CFG.url && CFG.key && window.supabase){
   document.getElementById("acct").textContent = "Sem conta configurada: os dados ficam só neste aparelho.";
 }
 
+if(lsGet("forja-bloco-dia",null)!==TODAY){ lsSet("forja-bloco-dia",TODAY); if(habit().status(TODAY)==="hoje"){ current = nextBlock(); lsSet("forja-bloco",current); } }
 renderAll();
 requestAnimationFrame(frame);
 if("serviceWorker" in navigator && location.protocol==="https:"){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
